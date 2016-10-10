@@ -1,3 +1,14 @@
+# Additional Observer Removal Info
+I assume current API has been sitting here for long time and can't track the good written fork trackerz. My problem was, UITableView instance in UIViewController and this UIViewController needs dismiss and crashes after invoke `- (void)dealloc` method that KVO is observing after UITableView deallocation. Because object is still get observed by API category class. a) tried to call `[[NSNotificationCenter defaultCenter] removeObserver:self];` no luck b) tried to remove `[[NSNotificationCenter defaultCenter] removeObserver:self.tableView];` no luck c) uncommented to `addObserver` and `removeObserver` luck. d) find out the issue this API might adding duplicated observer(s). Since as of now generically can't find duplicate observers, I created `NSMutableDicrionary` to track unique keyPath. 
+
+Besure to dereference observer from callee.
+For example, your UITableView is using SVPullToRefresh + SVInfiniteScrolling Category. Unsubscribe this before your object (UIViewController) deallocated.
+
+```objective-c
+    [self.tableView safelyRemoveObserver:self.ordersTableView object:self.ordersTableView.infiniteScrollingView keyPath:@"contentOffset"];
+    [self.tableView safelyRemoveObserver:self.ordersTableView object:self.ordersTableView.infiniteScrollingView keyPath:@"contentSize"];
+```
+
 # SVPullToRefresh + SVInfiniteScrolling
 
 These UIScrollView categories makes it super easy to add pull-to-refresh and infinite scrolling fonctionalities to any UIScrollView (or any of its subclass). Instead of relying on delegates and/or subclassing `UIViewController`, SVPullToRefresh uses the Objective-C runtime to add the following 3 methods to `UIScrollView`:
