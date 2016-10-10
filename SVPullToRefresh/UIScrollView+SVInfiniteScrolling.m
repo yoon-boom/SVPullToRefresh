@@ -45,6 +45,7 @@ static CGFloat const SVInfiniteScrollingViewHeight = 60;
 #import <objc/runtime.h>
 
 static char UIScrollViewInfiniteScrollingView;
+static char UIScrollViewInfiniteUniqueObservers;
 UIEdgeInsets scrollViewOriginalContentInsets;
 
 @implementation UIScrollView (SVInfiniteScrolling)
@@ -82,21 +83,60 @@ UIEdgeInsets scrollViewOriginalContentInsets;
     return objc_getAssociatedObject(self, &UIScrollViewInfiniteScrollingView);
 }
 
+- (void)setUniqueObservers:(NSMutableDictionary *)uniqueObservers {
+    [self willChangeValueForKey:@"UIScrollViewInfiniteUniqueObservers"];
+    objc_setAssociatedObject(self, &UIScrollViewInfiniteUniqueObservers, uniqueObservers, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [self didChangeValueForKey:@"UIScrollViewInfiniteUniqueObservers"];
+}
+
+- (NSMutableDictionary *)uniqueObservers {
+    return objc_getAssociatedObject(self, &UIScrollViewInfiniteUniqueObservers);
+}
+
+- (void)safelyRemoveObserver:(id)target object:(id)object keyPath:(NSString *)keyPath {
+    id observer = [self.uniqueObservers objectForKey:keyPath];
+    if (observer != nil && object != nil) {
+        [self.uniqueObservers removeObjectForKey:keyPath];
+        [target removeObserver:object forKeyPath:keyPath context:nil];
+    }
+    else {
+        NSLog(@"misfire remove observer that aren't registered");
+    }
+}
+
+- (void)safelyAddObserver:(id)target object:(id)object keyPath:(NSString *)keyPath {
+    if (self.uniqueObservers == nil) {
+        self.uniqueObservers = [[NSMutableDictionary alloc] init];
+    }
+    id observer = [self.uniqueObservers objectForKey:keyPath];
+    if (observer == nil && object != nil) {
+        [self.uniqueObservers setObject:object forKey:keyPath];
+        [target addObserver:object forKeyPath:keyPath options:NSKeyValueObservingOptionNew context:nil];
+    }
+    else {
+        NSLog(@"misfire add observer that are already registered");
+    }
+}
+
 - (void)setShowsInfiniteScrolling:(BOOL)showsInfiniteScrolling {
     self.infiniteScrollingView.hidden = !showsInfiniteScrolling;
     
     if(!showsInfiniteScrolling) {
       if (self.infiniteScrollingView.isObserving) {
-        [self removeObserver:self.infiniteScrollingView forKeyPath:@"contentOffset"];
-        [self removeObserver:self.infiniteScrollingView forKeyPath:@"contentSize"];
+          [self safelyRemoveObserver:self object:self.infiniteScrollingView keyPath:@"contentOffset"];
+          [self safelyRemoveObserver:self object:self.infiniteScrollingView keyPath:@"contentSize"];
+          //        [self removeObserver:self.infiniteScrollingView forKeyPath:@"contentOffset"];
+          //        [self removeObserver:self.infiniteScrollingView forKeyPath:@"contentSize"];
         [self.infiniteScrollingView resetScrollViewContentInset];
         self.infiniteScrollingView.isObserving = NO;
       }
     }
     else {
       if (!self.infiniteScrollingView.isObserving) {
-        [self addObserver:self.infiniteScrollingView forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
-        [self addObserver:self.infiniteScrollingView forKeyPath:@"contentSize" options:NSKeyValueObservingOptionNew context:nil];
+          [self safelyAddObserver:self object:self.infiniteScrollingView keyPath:@"contentOffset"];
+          [self safelyAddObserver:self object:self.infiniteScrollingView keyPath:@"contentSize"];
+          //        [self addObserver:self.infiniteScrollingView forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
+          //        [self addObserver:self.infiniteScrollingView forKeyPath:@"contentSize" options:NSKeyValueObservingOptionNew context:nil];
         [self.infiniteScrollingView setScrollViewContentInsetForInfiniteScrolling];
         self.infiniteScrollingView.isObserving = YES;
           

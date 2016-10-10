@@ -19,6 +19,9 @@
 @property (nonatomic, strong, readonly) SVInfiniteScrollingView *infiniteScrollingView;
 @property (nonatomic, assign) BOOL showsInfiniteScrolling;
 
+- (void)safelyRemoveObserver:(id)target object:(id)object keyPath:(NSString *)keyPath;
+- (void)safelyAddObserver:(id)target object:(id)object keyPath:(NSString *)keyPath;
+
 @end
 
 
