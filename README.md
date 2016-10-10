@@ -5,8 +5,8 @@ Besure to dereference observer from callee.
 For example, your UITableView is using SVPullToRefresh + SVInfiniteScrolling Category. Unsubscribe this before your object (UIViewController) deallocated.
 
 ```objective-c
-    [self.tableView safelyRemoveObserver:self.ordersTableView object:self.ordersTableView.infiniteScrollingView keyPath:@"contentOffset"];
-    [self.tableView safelyRemoveObserver:self.ordersTableView object:self.ordersTableView.infiniteScrollingView keyPath:@"contentSize"];
+    [self.tableView safelyRemoveObserver:self.ordersTableView object:self.tableView.infiniteScrollingView keyPath:@"contentOffset"];
+    [self.tableView safelyRemoveObserver:self.ordersTableView object:self.tableView.infiniteScrollingView keyPath:@"contentSize"];
 ```
 
 # SVPullToRefresh + SVInfiniteScrolling
